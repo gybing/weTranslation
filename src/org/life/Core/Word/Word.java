@@ -1,16 +1,11 @@
 package org.life.Core.Word;
 
-import org.apache.poi.hwpf.usermodel.*;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.apache.poi.xwpf.usermodel.XWPFTable;
 import org.apache.poi.xwpf.usermodel.XWPFTableCell;
-import org.apache.poi.xwpf.usermodel.XWPFTableRow;
 import org.life.Core.Word.Interface.WordProcessor;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Word 表格常用结构:
@@ -32,8 +27,8 @@ import java.util.Map;
  */
 public class Word implements WordProcessor {
     private Map<Integer, Map<String, List<XWPFTableCell>>> tableMap;
-    private Map<String, List<XWPFTableCell>> cellMap;
     private final Map<String, Integer> dataDirectionMap;
+    private Map<String, Integer> metaDataAndLengthMap;
     private final List<String> trimSet;
     private final XWPFDocument doc;
 
@@ -43,6 +38,7 @@ public class Word implements WordProcessor {
     private Word(Builder builder)
     {
         dataDirectionMap = builder.dataDirectionMap;
+        metaDataAndLengthMap = builder.metaDataAndLengthMap;
         trimSet = builder.trimSet;
         doc = builder.doc;
 
@@ -51,19 +47,25 @@ public class Word implements WordProcessor {
         if(null == dataDirectionMap || dataDirectionMap.size() == 0)throw new NullPointerException(String
                 .format("%s: dataDirectionMap is not init (constructor: Word).", getClass().getName()));
 
-        scanning();
+        scanning$empty();
     }
 
-    private void scanning()
+    private void scanning$full()
     {
         int rowNum = 0;
         int cellNum = 0;
+        int tableCount = 1;
         List<XWPFTable> tables = doc.getTables();
 
         for(XWPFTable table: tables)
         {
+            Map<String, List<XWPFTableCell>> cellMap = new HashMap<>();
+            tableMap.put(tableCount, cellMap);
+            tableCount++;
+
             final int totalRow = table.getNumberOfRows();
-            while(rowNum == totalRow)
+
+            while(rowNum < totalRow)
             {
                 XWPFTableCell cell = table.getRow(rowNum).getCell(cellNum);
 
@@ -75,7 +77,58 @@ public class Word implements WordProcessor {
                     continue;
                 }
 
-                // cell 已空代表当前 cell 不是元数据
+                if(! metaDataAndLengthMap.containsKey(cell.getText()))
+                {
+                    cellNum++;
+                    continue;
+                }
+
+                // 到这里开始获取 key 并设定数据方向
+                int direction = -1;
+                String key = trim(cell.getText());
+
+                // 此时的 rowNum 与 cellNum 均为 key 的方位！！！
+                if(dataDirectionMap.containsKey(key)) direction = dataDirectionMap.get(key);
+
+                scanning$core(table, key, cellMap, direction, rowNum, cellNum);
+                cellNum++;
+            }
+        }
+    }
+
+    private void scanning$core()
+    {
+
+    }
+
+    private void scanning$empty()
+    {
+        int rowNum = 0;
+        int cellNum = 0;
+        int tableCount = 1;
+        List<XWPFTable> tables = doc.getTables();
+
+        for(XWPFTable table: tables)
+        {
+            Map<String, List<XWPFTableCell>> cellMap = new HashMap<>();
+            tableMap.put(tableCount, cellMap);
+            tableCount++;
+
+            final int totalRow = table.getNumberOfRows();
+
+            while(rowNum < totalRow)
+            {
+                XWPFTableCell cell = table.getRow(rowNum).getCell(cellNum);
+
+                //  cell 为 null 代表当前 row 已空
+                if(null == cell)
+                {
+                    rowNum++;
+                    cellNum = 0;
+                    continue;
+                }
+
+                // cell 为空时跳过本次训话
                 if(cell.getText().equals(""))
                 {
                     cellNum++;
@@ -89,12 +142,14 @@ public class Word implements WordProcessor {
                 // 此时的 rowNum 与 cellNum 均为 key 的方位！！！
                 if(dataDirectionMap.containsKey(key)) direction = dataDirectionMap.get(key);
 
-                scanning$core(table, key, direction, rowNum, cellNum);
+                scanning$core(table, key, cellMap, direction, rowNum, cellNum);
+                cellNum++;
             }
         }
     }
 
-    private void scanning$core(XWPFTable table, String key, int direction, int rowNumCopy, int cellNumCopy)
+    private void scanning$core(XWPFTable table, String key, Map<String, List<XWPFTableCell>> cellMap,
+                               int direction, int rowNumCopy, int cellNumCopy)
     {
         while(true)
         {
@@ -102,8 +157,14 @@ public class Word implements WordProcessor {
             else if(RIGHT == direction)cellNumCopy++;
             else return;
 
-            XWPFTableCell cell = table.getRow(rowNumCopy).getCell(cellNumCopy);
-            if(null == cell || (! cell.getText().equals("")))return;
+            XWPFTableCell cell;
+            try {
+                cell = table.getRow(rowNumCopy).getCell(cellNumCopy);
+                if(null == cell || (! cell.getText().equals("")))return;
+            }
+            catch (NullPointerException e) {
+                return;
+            }
 
             if(! cellMap.containsKey(key))
             {
@@ -117,6 +178,7 @@ public class Word implements WordProcessor {
 
     static class Builder {
         private Map<String, Integer> dataDirectionMap;
+        private Map<String, Integer> metaDataAndLengthMap;
         private List<String> trimSet;
         private XWPFDocument doc;
 
@@ -135,6 +197,14 @@ public class Word implements WordProcessor {
          */
         public void setDataDirectionMap(Map<String, Integer> dataDirectionMap) {
             this.dataDirectionMap = dataDirectionMap;
+        }
+
+        /**
+         * 设置元数据及其数据量, 设定后表格扫描器将改变扫描风格, 扫描所有单元格直到满足指定数据量
+         * @param metaDataAndLengthMap 一个包含元数据及其数据量的 Map, 其中 key 为元数据, value 为数据量
+         */
+        public void setMetaDataAndLengthMap(Map<String, Integer> metaDataAndLengthMap) {
+            this.metaDataAndLengthMap = metaDataAndLengthMap;
         }
 
         /**
@@ -160,21 +230,39 @@ public class Word implements WordProcessor {
     @Override
     public void setCellData(int tableNum, String fieldName, String data)
     {
+        List<XWPFTableCell> cellList;
 
+        try {
+            cellList = tableMap.get(tableNum).get(fieldName);
+        }
+        catch (NullPointerException e) {
+            return;
+        }
+
+        if(cellList.size() <= 0)throw new IndexOutOfBoundsException(String
+                .format("%s: size is lower of zero: %d (Method: setCellData)", getClass().getName(), cellList.size()));
+
+        if(cellList.size() == 1) cellList.get(0).setText(data);
+        else
+        {
+            char[] arr = data.toCharArray();
+            int average = arr.length / cellList.size();
+
+            for(int x = 0; x < cellList.size(); x++)
+                cellList.get(x).setText(new String(arr, x * average, average));
+        }
     }
 
-    private void setCellData()
+    @Override
+    public void setTableData(int tableNum, Map<String, String> map)
     {
-
+        Set<Map.Entry<String, String>> entrySet = map.entrySet();
+        for(Map.Entry<String, String> entry: entrySet) setCellData(tableNum, entry.getKey(), entry.getValue());
     }
 
     @Override
-    public void setTableData(Map<String, List<String>> map) {
-
-    }
-
-    @Override
-    public String getCellData(int tableNum, String fieldName) {
+    public String getCellData(int tableNum, String fieldName)
+    {
         return null;
     }
 

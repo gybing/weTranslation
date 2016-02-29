@@ -9,7 +9,7 @@ public interface WordProcessor {
 
     void setCellData(int tableNum, String fieldName, String data);
 
-    void setTableData(Map<String, List<String>> map);
+    void setTableData(int tableNum, Map<String, String> map);
 
     String getCellData(int tableNum, String fieldName);
 
