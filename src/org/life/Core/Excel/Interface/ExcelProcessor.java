@@ -1,5 +1,6 @@
 package org.life.Core.Excel.Interface;
 
+import java.io.OutputStream;
 import java.util.List;
 import java.util.Map;
 
@@ -22,6 +23,10 @@ public interface ExcelProcessor {
     String getCellData(String colName, int rowNumber);
 
     String getCellData(int colNumber, int rowNumber);
+
+    void saveAs(String path);
+
+    void saveAs(OutputStream outputStream);
 
     void close();
 }

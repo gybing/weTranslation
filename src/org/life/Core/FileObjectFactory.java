@@ -19,12 +19,10 @@ public final class FileObjectFactory {
 
     public static HSSFWorkbook getWorkBook(HSSFFlag hssfFlag)
     {
-        try
-        {
+        try {
             return new HSSFWorkbook(hssfFlag.getStream());
         }
-        catch (IOException e)
-        {
+        catch (IOException e) {
             e.printStackTrace();
             throw new RuntimeException(String
                     .format("%s: get HSSFWorkbook failure (Method: getWorkBook).", FileObjectFactory.class.getName()));
@@ -33,12 +31,10 @@ public final class FileObjectFactory {
 
     public static XSSFWorkbook getWorkBook(XSSFFlag xssfFlag)
     {
-        try
-        {
+        try {
             return new XSSFWorkbook(xssfFlag.getStream());
         }
-        catch (IOException e)
-        {
+        catch (IOException e) {
             e.printStackTrace();
             throw new RuntimeException(String
                     .format("%s: get XSSFWorkbook failure (Method: getWorkBook).", FileObjectFactory.class.getName()));
@@ -47,12 +43,10 @@ public final class FileObjectFactory {
 
     public static XWPFDocument getDocument(XWPFFlag xwpfFlag)
     {
-        try
-        {
+        try {
             return new XWPFDocument(xwpfFlag.getStream());
         }
-        catch (IOException e)
-        {
+        catch (IOException e) {
             e.printStackTrace();
             throw new RuntimeException(String
                     .format("%s: get XWPFDocument failure (Method: getDocument).", FileObjectFactory.class.getName()));

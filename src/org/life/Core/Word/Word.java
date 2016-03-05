@@ -5,6 +5,10 @@ import org.apache.poi.xwpf.usermodel.XWPFTable;
 import org.apache.poi.xwpf.usermodel.XWPFTableCell;
 import org.life.Core.Word.Interface.WordProcessor;
 
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.*;
 
 /**
@@ -51,9 +55,6 @@ public class Word implements WordProcessor {
         scanning();
     }
 
-    /**
-     * 扫描非空单元格(读取模式)
-     */
     private void scanning()
     {
         int rowNum = 0;
@@ -81,35 +82,25 @@ public class Word implements WordProcessor {
                     continue;
                 }
 
-                // 非读取模式下跳过空字段
-                if(null == metaDataAndLengthMap && cell.getText().equals(""))
-                {
-                    cellNum++;
-                    continue;
-                }
-
                 // 到这里开始获取 key 并设定数据方向
                 int direction = -1;
                 String key = trim(cell.getText());
 
                 // 此时的 rowNum 与 cellNum 均为 key 的方位！！！
                 if(dataDirectionMap.containsKey(key)) direction = dataDirectionMap.get(key);
+                if(direction != -1)scanning$core(table, key, cellMap, direction, rowNum, cellNum);
 
-                if(metaDataAndLengthMap != null)scanning$reader();
-                else scanning$writer(table, key, cellMap, direction, rowNum, cellNum);
                 cellNum++;
             }
         }
     }
 
-    private void scanning$reader()
-    {
-
-    }
-
-    private void scanning$writer(XWPFTable table, String key, Map<String, List<XWPFTableCell>> cellMap,
+    private void scanning$core(XWPFTable table, String key, Map<String, List<XWPFTableCell>> cellMap,
                                int direction, int rowNumCopy, int cellNumCopy)
     {
+        int length = -1;
+        if(metaDataAndLengthMap != null)length = metaDataAndLengthMap.get(key);
+
         while(true)
         {
             if(BOTTOM == direction)rowNumCopy++;
@@ -119,7 +110,9 @@ public class Word implements WordProcessor {
             XWPFTableCell cell;
             try {
                 cell = table.getRow(rowNumCopy).getCell(cellNumCopy);
-                if(null == cell || (! cell.getText().equals("")))return;   //  此处根据策略而变
+                if(null == cell)return;
+                if(metaDataAndLengthMap != null && length <= 0)return;
+                if(null == metaDataAndLengthMap && (! cell.getText().equals("")))return;
             }
             catch (NullPointerException e) {
                 return;
@@ -132,10 +125,12 @@ public class Word implements WordProcessor {
                 cellMap.put(key, tmp);
             }
             else cellMap.get(key).add(cell);
+
+            if(length != -1)length--;
         }
     }
 
-    static class Builder {
+    public static final class Builder {
         private Map<String, Integer> dataDirectionMap;
         private Map<String, Integer> metaDataAndLengthMap;
         private List<String> trimSet;
@@ -154,38 +149,53 @@ public class Word implements WordProcessor {
          * 设置字段数据方向, 可选的方向有 Word.RIGHT 与 Word.BOTTOM
          * @param dataDirectionMap 一个字段数据方向的集合
          */
-        public void setDataDirectionMap(Map<String, Integer> dataDirectionMap) {
+        public Builder setDataDirectionMap(Map<String, Integer> dataDirectionMap)
+        {
             this.dataDirectionMap = dataDirectionMap;
+            return this;
         }
 
         /**
          * 设置元数据及其数据量, 设定后表格扫描器将改变扫描风格, 扫描所有单元格直到满足指定数据量
          * @param metaDataAndLengthMap 一个包含元数据及其数据量的 Map, 其中 key 为元数据, value 为数据量
          */
-        public void setMetaDataAndLengthMap(Map<String, Integer> metaDataAndLengthMap) {
+        public Builder setMetaDataAndLengthMap(Map<String, Integer> metaDataAndLengthMap)
+        {
             this.metaDataAndLengthMap = metaDataAndLengthMap;
+            return this;
         }
 
         /**
          * 声明文档中所有不同类型的空格, 制表符或未知但表现为空格的分隔符, 设置后将会过滤所有声明的分隔符
          * @param symbols 一个或多个表现为空格的分隔符
          */
-        public void setTrimSet(String... symbols)
+        public Builder setTrimSet(String... symbols)
         {
             trimSet = Arrays.asList(symbols);
+            return this;
         }
 
-        public Word Build()
+        public Word build()
         {
             return new Word(this);
         }
     }
 
+    /**
+     * 暂未实现
+     * @param text 需要写入文档的文字
+     */
     @Override
     public void writeText(String text) {
 
     }
 
+    /**
+     * 更改 Word 中指定表格的字段的数据
+     * @param tableNum 表索引号(按 Word 中表格的顺序)
+     * @param fieldName 字段名
+     * @param data 新数据
+     */
     @Override
     public void setCellData(int tableNum, String fieldName, String data)
     {
@@ -212,6 +222,11 @@ public class Word implements WordProcessor {
         }
     }
 
+    /**
+     * 批量更改 Word 中指定表名的字段的数据
+     * @param tableNum 表索引号(按 Word 中表格的顺序)
+     * @param map 新数据集合
+     */
     @Override
     public void setTableData(int tableNum, Map<String, String> map)
     {
@@ -222,22 +237,96 @@ public class Word implements WordProcessor {
     @Override
     public String getCellData(int tableNum, String fieldName)
     {
-        return null;
+        if(tableNum >= tableMap.size())throw new IndexOutOfBoundsException(String
+                .format("%s: out of tableIndex: %d (Method: getCellData)", getClass().getName(), tableNum));
+
+        Map<String, List<XWPFTableCell>> table = tableMap.get(tableNum);
+        List<XWPFTableCell> dlist = table.get(fieldName);
+
+        if(null == dlist)return "";
+
+        StringBuilder strBuilder = new StringBuilder();
+        for(XWPFTableCell cell: dlist)strBuilder.append(cell.getText());
+        return strBuilder.toString();
     }
 
+    /**
+     * 获取 Word 中指定表的所有数据
+     * @param tableNum 表索引号(按 Word 中表格的顺序)
+     * @return 返回一个包含指定表的数据的集合
+     */
     @Override
-    public Map<String, List<String>> getTableData(int tableNum) {
-        return null;
+    public Map<String, String> getTableData(int tableNum)
+    {
+        if(tableNum >= tableMap.size())throw new IndexOutOfBoundsException(String
+                .format("%s: out of tableIndex: %d (Method: getCellData)", getClass().getName(), tableNum));
+
+        Map<String, String> map = new HashMap<>();
+        Map<String, List<XWPFTableCell>> mapTmp = tableMap.get(tableNum);
+
+        Set<Map.Entry<String, List<XWPFTableCell>>> entrySet = mapTmp.entrySet();
+        for(Map.Entry<String, List<XWPFTableCell>> unit: entrySet)
+        {
+            List<XWPFTableCell> dList = unit.getValue();
+            StringBuilder strBuilder = new StringBuilder();
+            for(XWPFTableCell cell: dList)strBuilder.append(cell.getText());
+            map.put(unit.getKey(), strBuilder.toString());
+        }
+
+        return map;
     }
 
+    /**
+     * 获取 Word 文章(空实现)
+     * @return 返回 Word 所有文章段落
+     */
     @Override
     public String readText() {
         return null;
     }
 
+    /**
+     * 当前 Word 另存为
+     * @param path 新文件路径
+     */
     @Override
-    public void close() {
+    public void saveAs(String path)
+    {
+        try {
+            saveAs(new FileOutputStream(path));
+        }
+        catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
+    /**
+     * 当前 Excel 另存为
+     * @param outputStream 新文件路径
+     */
+    @Override
+    public void saveAs(OutputStream outputStream)
+    {
+        try {
+            doc.write(outputStream);
+        }
+        catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * 关闭资源
+     */
+    @Override
+    public void close()
+    {
+        try {
+            doc.close();
+        }
+        catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private String trim(String tar)

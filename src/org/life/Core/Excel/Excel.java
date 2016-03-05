@@ -7,14 +7,21 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.life.Core.Excel.Interface.ExcelProcessor;
-import org.life.Exception.ColumnOutOfBoundsException;
 import org.life.Exception.KeyException;
-import org.life.Exception.RowOutOfBoundsException;
 
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.*;
 
-
+/**
+ * mappingMap 元数据定位表, 用于定位数据, key 为元数据名, value 为列数
+ * metaDataList 元数据集合
+ * sheetName 目标表名
+ * sheetIndex 目标表索引
+ * metaDataRow 元数据行号
+ */
 public class Excel implements ExcelProcessor{
     private Map<String, Integer> mappingMap;
     private List<String> metaDataList;
@@ -63,7 +70,7 @@ public class Excel implements ExcelProcessor{
      * SheetName 或 SheetIndex 必须指定一个
      * metaDataRow 为元数据行, 必须指定该字段
      */
-    static class Builder {
+    public static final class Builder {
         private String sheetName;
         private int sheetIndex;
         private int metaDataRow;
@@ -91,24 +98,30 @@ public class Excel implements ExcelProcessor{
          * 设定需要处理的表名
          * @param sheetName 表名
          */
-        public void setSheetName(String sheetName) {
+        public Builder setSheetName(String sheetName)
+        {
             this.sheetName = sheetName;
+            return this;
         }
 
         /**
          * 设定需要处理的表的索引位置
          * @param sheetIndex 索引号
          */
-        public void setSheetIndex(int sheetIndex) {
+        public Builder setSheetIndex(int sheetIndex)
+        {
             this.sheetIndex = sheetIndex;
+            return this;
         }
 
         /**
          * 设定元数据的起始行号
          * @param metaDataRow 行号
          */
-        public void setMetaDataRow(int metaDataRow) {
+        public Builder setMetaDataRow(int metaDataRow)
+        {
             this.metaDataRow = metaDataRow;
+            return this;
         }
 
         public ExcelProcessor build()
@@ -121,7 +134,7 @@ public class Excel implements ExcelProcessor{
      * 更改指定单元格的数据
      * @param newData 新数据
      * @param colName 列名
-     * @param rowNumber 行数, 如果 rowNumber <= 0 或 rowNumber > lastRowNum 将引发 RowOutOfBoundsException
+     * @param rowNumber 行数, 如果 rowNumber <= 0 或 rowNumber > lastRowNum 将引发 IndexOutOfBoundsException
      */
     @Override
     public void setCellData(String newData, String colName, int rowNumber)
@@ -135,20 +148,20 @@ public class Excel implements ExcelProcessor{
     /**
      * 更改指定的单元格数据
      * @param newData 新数据
-     * @param colNumber 列数, 如果 colNumber < 0 将引发 ColumnOutOfBoundsException
-     * @param rowNumber 行数, 如果 rowNumber <= 0 或 rowNumber >= lastRowNum 将引发 RowOutOfBoundsException
+     * @param colNumber 列数, 如果 colNumber < 0 将引发 IndexOutOfBoundsException
+     * @param rowNumber 行数, 如果 rowNumber <= 0 或 rowNumber >= lastRowNum 将引发 IndexOutOfBoundsException
      */
     @Override
     public void setCellData(String newData, int colNumber, int rowNumber)
     {
-        if(rowNumber <= metaDataRow)throw new RowOutOfBoundsException(String
-                .format("%s: OutOfIndex: %d (Method: setCellData).", getClass().getName(), rowNumber));
-        if(colNumber < 0)throw new ColumnOutOfBoundsException(String
-                .format("%s: OutOfIndex: %d (Method: setCellData).", getClass().getName(), colNumber));
+        if(rowNumber <= metaDataRow)throw new IndexOutOfBoundsException(String
+                .format("%s: RowOutOfIndex: %d (Method: setCellData).", getClass().getName(), rowNumber));
+        if(colNumber < 0)throw new IndexOutOfBoundsException(String
+                .format("%s: ColumnOutOfIndex: %d (Method: setCellData).", getClass().getName(), colNumber));
 
         Sheet sheet = wb.getSheet(sheetName);
-        if(rowNumber >= sheet.getLastRowNum())throw new RowOutOfBoundsException(String
-                .format("%s: OutOfIndex: %d (Method: setCellData).", getClass().getName(), rowNumber));
+        if(rowNumber >= sheet.getLastRowNum())throw new IndexOutOfBoundsException(String
+                .format("%s: RowOutOfIndex: %d (Method: setCellData).", getClass().getName(), rowNumber));
 
         Row row = sheet.getRow(rowNumber);
         row.getCell(colNumber).setCellValue(newData);
@@ -162,19 +175,19 @@ public class Excel implements ExcelProcessor{
     @Override
     public void setRow(Map<String, String> data, int rowNumber)
     {
-        if(rowNumber <= metaDataRow)throw new RowOutOfBoundsException(String
-                .format("%s: OutOfIndex: %d (Method: setRow).", getClass().getName(), rowNumber));
+        if(rowNumber <= metaDataRow)throw new IndexOutOfBoundsException(String
+                .format("%s: RowOutOfIndex: %d (Method: setRow).", getClass().getName(), rowNumber));
         if(null == data)throw new NullPointerException(String
                 .format("%s: Object is Null: data (Method: setRow)", getClass().getName()));
 
         // 元数据匹配检查
         String result = metaDataChecker(data.keySet());
         if(! result.equals(""))throw new KeyException(String
-                .format("%s: ColumnNotExist: %s (Method: setRow)", getClass().getName(), result));
+                .format("%s: KeyNotExist: %s (Method: setRow)", getClass().getName(), result));
 
         Sheet sheet = wb.getSheet(sheetName);
-        if(rowNumber >= sheet.getLastRowNum())throw new RowOutOfBoundsException(String
-                .format("%s: OutOfIndex: %d (Method: setRow).", getClass().getName(), rowNumber));
+        if(rowNumber >= sheet.getLastRowNum())throw new IndexOutOfBoundsException(String
+                .format("%s: RowOutOfIndex: %d (Method: setRow).", getClass().getName(), rowNumber));
 
         Row row = sheet.getRow(rowNumber);
         Set<Map.Entry<String, String>> iter = data.entrySet();
@@ -224,7 +237,7 @@ public class Excel implements ExcelProcessor{
         Sheet sheet = wb.getSheet(sheetName);
         List<Map<String, String>> dataList = new ArrayList<>();
 
-        for(int x = 1; x < sheet.getLastRowNum(); x++)
+        for(int x = metaDataRow; x < sheet.getLastRowNum(); x++)
         {
             Row row = sheet.getRow(x);
             Map<String, String> dataMap = new HashMap<>();
@@ -250,15 +263,15 @@ public class Excel implements ExcelProcessor{
     @Override
     public Map<String, String> getRowData(int rowNumber)
     {
-        if(rowNumber <= metaDataRow)throw new RowOutOfBoundsException(String
-                .format("%s: OutOfIndex: %d (Method: getRowData).", getClass().getName(), rowNumber));
+        if(rowNumber <= metaDataRow)throw new IndexOutOfBoundsException(String
+                .format("%s: RowOutOfIndex: %d (Method: getRowData).", getClass().getName(), rowNumber));
 
         Sheet sheet = wb.getSheet(sheetName);
         Row row = sheet.getRow(rowNumber);
         Map<String, String> dataMap = new HashMap<>();
 
-        if(rowNumber >= sheet.getLastRowNum())throw new RowOutOfBoundsException(String
-                .format("%s: OutOfIndex: %d (Method: getRowData).", getClass().getName(), rowNumber));
+        if(rowNumber >= sheet.getLastRowNum())throw new IndexOutOfBoundsException(String
+                .format("%s: RowOutOfIndex: %d (Method: getRowData).", getClass().getName(), rowNumber));
 
         Set<Map.Entry<String, Integer>> iter = mappingMap.entrySet();
         for(Map.Entry<String, Integer> entry: iter)
@@ -294,17 +307,47 @@ public class Excel implements ExcelProcessor{
     @Override
     public String getCellData(int colNumber, int rowNumber)
     {
-        if(rowNumber <= metaDataRow)throw new RowOutOfBoundsException(String
-                .format("%s: OutOfIndex: %d (Method: getCellData).", getClass().getName(), rowNumber));
-        if(colNumber < 0)throw new ColumnOutOfBoundsException(String
-                .format("%s: OutOfIndex: %d (Method: getCellData).", getClass().getName(), colNumber));
+        if(rowNumber <= metaDataRow)throw new IndexOutOfBoundsException(String
+                .format("%s: RowOutOfIndex: %d (Method: getCellData).", getClass().getName(), rowNumber));
+        if(colNumber < 0)throw new IndexOutOfBoundsException(String
+                .format("%s: ColumnOutOfIndex: %d (Method: getCellData).", getClass().getName(), colNumber));
 
         Sheet sheet = wb.getSheet(sheetName);
-        if(rowNumber >= sheet.getLastRowNum())throw new RowOutOfBoundsException(String
-                .format("%s: OutOfIndex: %d (Method: getCellData).", getClass().getName(), rowNumber));
+        if(rowNumber >= sheet.getLastRowNum())throw new IndexOutOfBoundsException(String
+                .format("%s: RowOutOfIndex: %d (Method: getCellData).", getClass().getName(), rowNumber));
 
         Row row = sheet.getRow(rowNumber);
         return row.getCell(colNumber).getStringCellValue();
+    }
+
+    /**
+     * 当前 Excel 另存为
+     * @param path 新文件路径
+     */
+    @Override
+    public void saveAs(String path)
+    {
+        try {
+            saveAs(new FileOutputStream(path));
+        }
+        catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * 当前 Excel 另存为
+     * @param outputStream 输出流
+     */
+    @Override
+    public void saveAs(OutputStream outputStream)
+    {
+        try {
+            wb.write(outputStream);
+        }
+        catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
@@ -313,15 +356,11 @@ public class Excel implements ExcelProcessor{
     @Override
     public void close()
     {
-        try
-        {
+        try {
             wb.close();
         }
-        catch (IOException e)
-        {
-            e.printStackTrace();
-            throw new RuntimeException(String
-                    .format("%s: close failure. (Method: close)", getClass().getName()));
+        catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -332,8 +371,7 @@ public class Excel implements ExcelProcessor{
      */
     private String metaDataChecker(Set<String> keySet)
     {
-        for(String unit: keySet)
-        {
+        for(String unit: keySet) {
             if(! metaDataList.contains(unit))return unit;
         }
         return "";

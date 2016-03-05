@@ -1,6 +1,7 @@
-package org.life.Core.Excel;
+package org.life.Test;
 
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.life.Core.Excel.Excel;
 import org.life.Core.Excel.Interface.ExcelProcessor;
 import org.life.Core.FileObjectFactory;
 import org.life.Core.FileReaders;
@@ -9,7 +10,7 @@ import org.life.Core.TypeFlag.XSSFFlag;
 
 import java.util.Arrays;
 
-public class Test {
+public class Test2 {
 
     public static void main(String[] args)
     {

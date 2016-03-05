@@ -1,5 +1,6 @@
 package org.life.Core.Word.Interface;
 
+import java.io.OutputStream;
 import java.util.List;
 import java.util.Map;
 
@@ -13,9 +14,13 @@ public interface WordProcessor {
 
     String getCellData(int tableNum, String fieldName);
 
-    Map<String, List<String>> getTableData(int tableNum);
+    Map<String, String> getTableData(int tableNum);
 
     String readText();
+
+    void saveAs(String path);
+
+    void saveAs(OutputStream outputStream);
 
     void close();
 }
