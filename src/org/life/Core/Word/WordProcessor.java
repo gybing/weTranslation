@@ -3,7 +3,7 @@ package org.life.Core.Word;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.apache.poi.xwpf.usermodel.XWPFTable;
 import org.apache.poi.xwpf.usermodel.XWPFTableCell;
-import org.life.Core.Word.Interface.WordProcessor;
+import org.life.Core.Word.Interface.Word;
 
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -30,7 +30,7 @@ import java.util.*;
  * metaDataAndLengthMap 元数据及其数据长度， key-元数据 value-数据长度，非 null 时为读取模式
  * trimSet 过滤字符集合 将会过滤掉在此列表中所有的字符
  */
-public class Word implements WordProcessor {
+public class WordProcessor implements Word {
     private Map<Integer, Map<String, List<XWPFTableCell>>> tableMap;
     private final Map<String, Integer> dataDirectionMap;
     private Map<String, Integer> metaDataAndLengthMap;
@@ -40,12 +40,13 @@ public class Word implements WordProcessor {
     public static final int RIGHT = 0x00;
     public static final int BOTTOM = 0x01;
 
-    private Word(Builder builder)
+    private WordProcessor(Builder builder)
     {
         dataDirectionMap = builder.dataDirectionMap;
         metaDataAndLengthMap = builder.metaDataAndLengthMap;
         trimSet = builder.trimSet;
         doc = builder.doc;
+        tableMap = new HashMap<>();
 
         if(null == doc)throw new NullPointerException(String
                 .format("%s: document Object is not init (constructor: Word).", getClass().getName()));
@@ -175,9 +176,9 @@ public class Word implements WordProcessor {
             return this;
         }
 
-        public Word build()
+        public WordProcessor build()
         {
-            return new Word(this);
+            return new WordProcessor(this);
         }
     }
 

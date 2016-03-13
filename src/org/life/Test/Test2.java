@@ -1,8 +1,8 @@
 package org.life.Test;
 
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.life.Core.Excel.Excel;
-import org.life.Core.Excel.Interface.ExcelProcessor;
+import org.life.Core.Excel.ExcelProcessor;
+import org.life.Core.Excel.Interface.Excel;
 import org.life.Core.FileObjectFactory;
 import org.life.Core.FileReaders;
 import org.life.Core.TypeFlag.AbstractFlag.Flag;
@@ -17,10 +17,10 @@ public class Test2 {
         Flag flag = FileReaders.getFileFlag("E:\\12.xlsx");
         XSSFWorkbook wb = FileObjectFactory.getWorkBook((XSSFFlag) flag);
 
-        Excel.Builder builder = new Excel.Builder(wb);
+        ExcelProcessor.Builder builder = new ExcelProcessor.Builder(wb);
         builder.setSheetIndex(0);
         builder.setMetaDataRow(2);
-        ExcelProcessor process = builder.build();
+        Excel process = builder.build();
 
         System.out.println(Arrays.toString(process.getMetaData().toArray()));
     }

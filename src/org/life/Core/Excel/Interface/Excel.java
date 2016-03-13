@@ -4,7 +4,7 @@ import java.io.OutputStream;
 import java.util.List;
 import java.util.Map;
 
-public interface ExcelProcessor {
+public interface Excel {
 
     void setCellData(String newData, String colName, int rowNumber);
 

@@ -6,7 +6,7 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.life.Core.Excel.Interface.ExcelProcessor;
+import org.life.Core.Excel.Interface.Excel;
 import org.life.Exception.KeyException;
 
 import java.io.FileNotFoundException;
@@ -22,7 +22,7 @@ import java.util.*;
  * sheetIndex 目标表索引
  * metaDataRow 元数据行号
  */
-public class Excel implements ExcelProcessor{
+public class ExcelProcessor implements Excel {
     private Map<String, Integer> mappingMap;
     private List<String> metaDataList;
     private final String sheetName;
@@ -35,7 +35,7 @@ public class Excel implements ExcelProcessor{
         metaDataList = new ArrayList<>();
     }
 
-    private Excel(Builder builder)
+    private ExcelProcessor(Builder builder)
     {
         sheetName = builder.sheetName;
         sheetIndex = builder.sheetIndex;
@@ -124,9 +124,9 @@ public class Excel implements ExcelProcessor{
             return this;
         }
 
-        public ExcelProcessor build()
+        public Excel build()
         {
-            return new Excel(this);
+            return new ExcelProcessor(this);
         }
     }
 

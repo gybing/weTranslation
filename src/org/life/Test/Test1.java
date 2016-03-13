@@ -9,12 +9,9 @@ import org.life.Core.FileObjectFactory;
 import org.life.Core.FileReaders;
 import org.life.Core.TypeFlag.AbstractFlag.Flag;
 import org.life.Core.TypeFlag.XWPFFlag;
-import org.life.Core.Word.Word;
 
 import java.io.*;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class Test1 {
     public static void main(String[] args) throws IOException {
