@@ -20,22 +20,18 @@ public final class Engines {
     private static String wordPath = "";
 
     private Engines() {}
-    public static void initExcel(String path, int sheetNum, int metadataRowNum)
-    {
+    public static void initExcel(String path, int sheetNum, int metadataRowNum) {
         if(excelPath.equals(path))return;
         else excelPath = path;
 
         Flag flag = FileReaders.getFileFlag(excelPath);
-        if(flag instanceof HSSFFlag)
-        {
+        if(flag instanceof HSSFFlag) {
             excelHandles = new ExcelProcessor.Builder(FileObjectFactory
                     .getWorkBook((HSSFFlag) flag))
                     .setSheetIndex(sheetNum)
                     .setMetaDataRow(metadataRowNum)
                     .build();
-        }
-        else
-        {
+        } else {
             excelHandles = new ExcelProcessor.Builder(FileObjectFactory
                     .getWorkBook((XSSFFlag) flag))
                     .setSheetIndex(sheetNum)
@@ -44,29 +40,29 @@ public final class Engines {
         }
     }
 
-    public static void initWordInRead(String path, Map<String, Integer> directionMap,
-                               Map<String, Integer> metaDataAndLengthMap)
-    {
+    public static void initWordInReadModel(String path, Map<String, Integer> directionMap,
+                               Map<String, Integer> metaDataAndLengthMap, String[] symbols) {
         if(wordPath.equals(path))return;
         else wordPath = path;
 
-        Flag flag = FileReaders.getFileFlag(excelPath);
+        Flag flag = FileReaders.getFileFlag(wordPath);
         wordHandles = new WordProcessor.Builder(FileObjectFactory
                 .getDocument((XWPFFlag) flag))
+                .setTrimSet(symbols)
                 .setDataDirectionMap(directionMap)
                 .setMetaDataAndLengthMap(metaDataAndLengthMap)
                 .build();
     }
 
-    public static void initWordWrite(String path, Map<String, Integer> directionMap)
-    {
+    public static void initWordInWriteModel(String path, Map<String, Integer> directionMap, String[] symbols) {
         if(wordPath.equals(path))return;
         else wordPath = path;
 
-        Flag flag = FileReaders.getFileFlag(excelPath);
+        Flag flag = FileReaders.getFileFlag(wordPath);
         wordHandles = new WordProcessor.Builder(FileObjectFactory
                 .getDocument((XWPFFlag) flag))
                 .setDataDirectionMap(directionMap)
+                .setTrimSet(symbols)
                 .build();
     }
 

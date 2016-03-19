@@ -159,7 +159,7 @@ public class ExcelProcessor implements Excel {
         if(colNumber < 0)throw new IndexOutOfBoundsException(String
                 .format("%s: ColumnOutOfIndex: %d (Method: setCellData).", getClass().getName(), colNumber));
 
-        Sheet sheet = wb.getSheet(sheetName);
+        Sheet sheet = sheetName != null ? wb.getSheet(sheetName) : wb.getSheetAt(sheetIndex);
         if(rowNumber >= sheet.getLastRowNum())throw new IndexOutOfBoundsException(String
                 .format("%s: RowOutOfIndex: %d (Method: setCellData).", getClass().getName(), rowNumber));
 
@@ -185,7 +185,7 @@ public class ExcelProcessor implements Excel {
         if(! result.equals(""))throw new KeyException(String
                 .format("%s: KeyNotExist: %s (Method: setRow)", getClass().getName(), result));
 
-        Sheet sheet = wb.getSheet(sheetName);
+        Sheet sheet = sheetName != null ? wb.getSheet(sheetName) : wb.getSheetAt(sheetIndex);
         if(rowNumber >= sheet.getLastRowNum())throw new IndexOutOfBoundsException(String
                 .format("%s: RowOutOfIndex: %d (Method: setRow).", getClass().getName(), rowNumber));
 
@@ -210,7 +210,7 @@ public class ExcelProcessor implements Excel {
         if(! result.equals(""))throw new KeyException(String
                 .format("%s: ColumnNotExist: %s (Method: addRow)", getClass().getName(), result));
 
-        Sheet sheet = wb.getSheet(sheetName);
+        Sheet sheet = sheetName != null ? wb.getSheet(sheetName) : wb.getSheetAt(sheetIndex);
         Row row = sheet.createRow(sheet.getLastRowNum());
         Set<Map.Entry<String, String>> iter = data.entrySet();
 
@@ -234,10 +234,10 @@ public class ExcelProcessor implements Excel {
     @Override
     public List<Map<String, String>> getData()
     {
-        Sheet sheet = wb.getSheet(sheetName);
+        Sheet sheet = sheetName != null ? wb.getSheet(sheetName) : wb.getSheetAt(sheetIndex);
         List<Map<String, String>> dataList = new ArrayList<>();
 
-        for(int x = metaDataRow; x < sheet.getLastRowNum(); x++)
+        for(int x = metaDataRow + 1; x <= sheet.getLastRowNum(); x++)
         {
             Row row = sheet.getRow(x);
             Map<String, String> dataMap = new HashMap<>();
@@ -245,6 +245,9 @@ public class ExcelProcessor implements Excel {
 
             for(Map.Entry<String, Integer> entry: iter)
             {
+                Cell cell = row.getCell(entry.getValue());
+                cell.setCellType(Cell.CELL_TYPE_STRING);
+
                 String data = row.getCell(entry.getValue()).getStringCellValue();
                 dataMap.put(entry.getKey(), data);
             }
@@ -266,7 +269,7 @@ public class ExcelProcessor implements Excel {
         if(rowNumber <= metaDataRow)throw new IndexOutOfBoundsException(String
                 .format("%s: RowOutOfIndex: %d (Method: getRowData).", getClass().getName(), rowNumber));
 
-        Sheet sheet = wb.getSheet(sheetName);
+        Sheet sheet = sheetName != null ? wb.getSheet(sheetName) : wb.getSheetAt(sheetIndex);
         Row row = sheet.getRow(rowNumber);
         Map<String, String> dataMap = new HashMap<>();
 
@@ -312,7 +315,7 @@ public class ExcelProcessor implements Excel {
         if(colNumber < 0)throw new IndexOutOfBoundsException(String
                 .format("%s: ColumnOutOfIndex: %d (Method: getCellData).", getClass().getName(), colNumber));
 
-        Sheet sheet = wb.getSheet(sheetName);
+        Sheet sheet = sheetName != null ? wb.getSheet(sheetName) : wb.getSheetAt(sheetIndex);
         if(rowNumber >= sheet.getLastRowNum())throw new IndexOutOfBoundsException(String
                 .format("%s: RowOutOfIndex: %d (Method: getCellData).", getClass().getName(), rowNumber));
 
@@ -344,6 +347,7 @@ public class ExcelProcessor implements Excel {
     {
         try {
             wb.write(outputStream);
+            outputStream.close();
         }
         catch (IOException e) {
             throw new RuntimeException(e);

@@ -114,8 +114,7 @@ public class WordProcessor implements Word {
                 if(null == cell)return;
                 if(metaDataAndLengthMap != null && length <= 0)return;
                 if(null == metaDataAndLengthMap && (! cell.getText().equals("")))return;
-            }
-            catch (NullPointerException e) {
+            } catch (NullPointerException e) {
                 return;
             }
 
@@ -209,18 +208,8 @@ public class WordProcessor implements Word {
             return;
         }
 
-        if(cellList.size() <= 0)throw new IndexOutOfBoundsException(String
-                .format("%s: size is lower of zero: %d (Method: setCellData)", getClass().getName(), cellList.size()));
-
-        if(cellList.size() == 1) cellList.get(0).setText(data);
-        else
-        {
-            char[] arr = data.toCharArray();
-            int average = arr.length / cellList.size();
-
-            for(int x = 0; x < cellList.size(); x++)
-                cellList.get(x).setText(new String(arr, x * average, average));
-        }
+        if(null == cellList || cellList.size() <= 0)return;
+        cellList.get(0).setText(data);
     }
 
     /**
@@ -310,6 +299,7 @@ public class WordProcessor implements Word {
     {
         try {
             doc.write(outputStream);
+            outputStream.close();
         }
         catch (IOException e) {
             throw new RuntimeException(e);
