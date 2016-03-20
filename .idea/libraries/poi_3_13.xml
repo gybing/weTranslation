@@ -1,0 +1,14 @@
+<component name="libraryTable">
+  <library name="poi-3.13">
+    <CLASSES>
+      <root url="jar://E:/FrameworkPackage/Java/Poi3/poi-3.13-20150929.jar!/" />
+      <root url="jar://E:/FrameworkPackage/Java/Poi3/poi-ooxml-3.13-20150929.jar!/" />
+      <root url="jar://E:/FrameworkPackage/Java/Poi3/poi-ooxml-schemas-3.13-20150929.jar!/" />
+      <root url="jar://E:/FrameworkPackage/Java/Poi3/poi-scratchpad-3.13-20150929.jar!/" />
+      <root url="jar://E:/FrameworkPackage/Java/Poi3/ooxml-lib/xmlbeans-2.6.0.jar!/" />
+      <root url="jar://E:/FrameworkPackage/Java/Poi3/lib/commons-codec-1.9.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
